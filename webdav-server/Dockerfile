@@ -1,66 +1,81 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.15
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 
 FROM ${BUILD_FROM}
 
-# Mettre à jour les dépôts et installer les paquets nécessaires
-RUN apk update && \
-    apk add --no-cache \
+# Configuration shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Utiliser S6-Overlay déjà installé dans l'image de base
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+
+# Installation des paquets nécessaires
+RUN \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
         apache2 \
         apache2-utils \
-        apache2-proxy \
-        apache2-ssl \
-        apache-mod-webdav \
-        php8 \
-        php8-apache2 \
-        php8-session \
-        php8-json \
-        php8-fileinfo \
-        php8-curl \
-        php8-dom \
-        php8-xml \
-        php8-mbstring \
-        php8-zip \
-        php8-gd \
-        bash \
+        libapache2-mod-php \
+        php \
+        php-curl \
+        php-xml \
+        php-zip \
+        php-gd \
+        php-mbstring \
+        php-json \
+        php-fileinfo \
+        ca-certificates \
         jq \
-        curl \
-        ca-certificates
+    && a2enmod dav \
+    && a2enmod dav_fs \
+    && a2enmod auth_digest \
+    && a2enmod rewrite \
+    && a2enmod ssl \
+    && a2enmod php \
+    && a2enmod headers \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Téléchargement des bibliothèques JS/CSS
-RUN mkdir -p /tmp/webui && \
-    curl -L -o /tmp/bootstrap.min.css https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css && \
-    curl -L -o /tmp/bootstrap.min.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js && \
-    curl -L -o /tmp/jquery.min.js https://code.jquery.com/jquery-3.6.0.min.js && \
-    curl -L -o /tmp/fontawesome.min.css https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css
+RUN mkdir -p /tmp/webui \
+    && curl -L -o /tmp/bootstrap.min.css https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css \
+    && curl -L -o /tmp/bootstrap.min.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js \
+    && curl -L -o /tmp/jquery.min.js https://code.jquery.com/jquery-3.6.0.min.js \
+    && curl -L -o /tmp/fontawesome.min.css https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css
 
 # Créer les dossiers de l'interface web
-RUN mkdir -p /usr/local/webui/css \
-             /usr/local/webui/js \
-             /usr/local/webui/includes
+RUN mkdir -p /var/www/html/css \
+             /var/www/html/js \
+             /var/www/html/includes
 
 # Copier les bibliothèques téléchargées
-RUN cp /tmp/bootstrap.min.css /usr/local/webui/css/ && \
-    cp /tmp/bootstrap.min.js /usr/local/webui/js/ && \
-    cp /tmp/jquery.min.js /usr/local/webui/js/ && \
-    cp /tmp/fontawesome.min.css /usr/local/webui/css/ && \
-    rm -rf /tmp/webui
+RUN cp /tmp/bootstrap.min.css /var/www/html/css/ \
+    && cp /tmp/bootstrap.min.js /var/www/html/js/ \
+    && cp /tmp/jquery.min.js /var/www/html/js/ \
+    && cp /tmp/fontawesome.min.css /var/www/html/css/ \
+    && rm -rf /tmp/*
 
-# Copier les fichiers de configuration
-COPY rootfs /
+# Copier les fichiers de l'application
+COPY rootfs/ /
 
-# Définir les permissions
-RUN chmod +x /usr/local/bin/init.sh && \
-    chmod +x /etc/services.d/apache/run && \
-    chmod +x /etc/services.d/init/run
+# Site WebDAV par défaut
+COPY rootfs/etc/apache2/sites-available/webdav.conf /etc/apache2/sites-available/webdav.conf
+RUN a2ensite webdav
 
-# Script d'exécution
-COPY run.sh /
-RUN chmod a+x /run.sh
+# Permissions
+RUN chmod +x /etc/s6-overlay/s6-rc.d/apache/run \
+    && chmod +x /etc/s6-overlay/s6-rc.d/init/run \
+    && chmod +x /usr/local/bin/init.sh \
+    && chmod 755 /etc/apache2
 
 # Exposer le port
 EXPOSE 80
 
-# S6-Overlay & Init
-ENTRYPOINT ["/init"]
-CMD ["/run.sh"]
+# Étiquettes
+LABEL \
+    io.hass.name="WebDAV Explorer" \
+    io.hass.description="WebDAV Server with Web Explorer for Home Assistant" \
+    io.hass.version="${BUILD_VERSION}" \
+    io.hass.type="addon" \
+    io.hass.arch="aarch64|amd64|armhf|armv7|i386"
+
 
