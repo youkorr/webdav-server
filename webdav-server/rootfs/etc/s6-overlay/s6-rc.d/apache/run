@@ -1,0 +1,3 @@
+#!/usr/bin/with-contenv bashio
+bashio::log.info "Starting Apache server..."
+exec apache2ctl -D FOREGROUND
