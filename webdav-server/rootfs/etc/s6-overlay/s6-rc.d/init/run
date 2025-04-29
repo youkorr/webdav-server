@@ -1,3 +1,4 @@
-#!/usr/bin/with-contenv bashio
-bashio::log.info "Initializing WebDAV server..."
+#!/command/with-contenv sh
+echo "Initializing WebDAV server..."
 exec /usr/local/bin/init.sh
+
