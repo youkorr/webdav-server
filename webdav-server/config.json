@@ -1,0 +1,46 @@
+{
+  "name": "WebDAV Server & Explorer",
+  "version": "1.1.0",
+  "slug": "webdav_explorer",
+  "description": "Serveur WebDAV avec interface web pour gérer les fichiers et se connecter à d'autres serveurs WebDAV",
+  "url": "https://github.com/votre-nom/webdav-explorer",
+  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "startup": "services",
+  "boot": "auto",
+  "map": ["config:rw", "ssl"],
+  "ports": {
+    "80/tcp": 8099
+  },
+  "options": {
+    "username": "admin",
+    "password": "",
+    "base_path": "/config/www/partage/shared",
+    "read_only": false,
+    "auth_required": true,
+    "external_webdav": [
+      {
+        "name": "ESP32-WebDAV",
+        "enabled": false,
+        "url": "http://192.168.1.x:80",
+        "username": "",
+        "password": ""
+      }
+    ]
+  },
+  "schema": {
+    "username": "str",
+    "password": "password",
+    "base_path": "str",
+    "read_only": "bool",
+    "auth_required": "bool",
+    "external_webdav": [
+      {
+        "name": "str",
+        "enabled": "bool",
+        "url": "str",
+        "username": "str",
+        "password": "str"
+      }
+    ]
+  }
+}
