@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bash
+
+# Attendre que l'initialisation soit terminée
+s6-svwait -U /var/run/s6/services/init
+
+# Exécuter Apache en premier plan
+exec apache2 -D FOREGROUND
