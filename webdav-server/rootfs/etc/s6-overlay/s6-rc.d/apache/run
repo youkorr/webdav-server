@@ -1,3 +1,4 @@
-#!/usr/bin/with-contenv bashio
-bashio::log.info "Starting Apache server..."
-exec apache2ctl -D FOREGROUND
+#!/command/with-contenv sh
+echo "Starting Apache server..."
+exec /usr/sbin/httpd -D FOREGROUND
+
