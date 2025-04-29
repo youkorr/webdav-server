@@ -2,29 +2,29 @@ ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.15
 
 FROM ${BUILD_FROM}
 
-# Installer les dépendances
-RUN apk add --no-cache \
-    apache2 \
-    apache2-utils \
-    apache2-proxy \
-    apache2-ssl \
-    apache2-webdav \
-    php8-apache2 \
-    php8 \
-    php8-session \
-    php8-json \
-    php8-fileinfo \
-    php8-curl \
-    php8-dom \
-    php8-xml \
-    php8-mbstring \
-    php8-zip \
-    php8-gd \
-    s6 \
-    bash \
-    jq \
-    curl \
-    ca-certificates
+# Mettre à jour les dépôts et installer les paquets nécessaires
+RUN apk update && \
+    apk add --no-cache \
+        apache2 \
+        apache2-utils \
+        apache2-proxy \
+        apache2-ssl \
+        apache-mod-webdav \
+        php8 \
+        php8-apache2 \
+        php8-session \
+        php8-json \
+        php8-fileinfo \
+        php8-curl \
+        php8-dom \
+        php8-xml \
+        php8-mbstring \
+        php8-zip \
+        php8-gd \
+        bash \
+        jq \
+        curl \
+        ca-certificates
 
 # Téléchargement des bibliothèques JS/CSS
 RUN mkdir -p /tmp/webui && \
@@ -42,10 +42,16 @@ RUN mkdir -p /usr/local/webui/css \
 RUN cp /tmp/bootstrap.min.css /usr/local/webui/css/ && \
     cp /tmp/bootstrap.min.js /usr/local/webui/js/ && \
     cp /tmp/jquery.min.js /usr/local/webui/js/ && \
-    cp /tmp/fontawesome.min.css /usr/local/webui/css/
+    cp /tmp/fontawesome.min.css /usr/local/webui/css/ && \
+    rm -rf /tmp/webui
 
 # Copier les fichiers de configuration
 COPY rootfs /
+
+# Définir les permissions
+RUN chmod +x /usr/local/bin/init.sh && \
+    chmod +x /etc/services.d/apache/run && \
+    chmod +x /etc/services.d/init/run
 
 # Script d'exécution
 COPY run.sh /
@@ -57,3 +63,4 @@ EXPOSE 80
 # S6-Overlay & Init
 ENTRYPOINT ["/init"]
 CMD ["/run.sh"]
+
