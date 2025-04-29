@@ -1,0 +1,4 @@
+#!/usr/bin/with-contenv bash
+
+# Exécuter le script d'initialisation
+exec /usr/local/bin/init.sh
